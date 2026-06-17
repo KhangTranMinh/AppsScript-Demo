@@ -118,6 +118,7 @@ Example rows:
 - A filter on the full table
 - Protected generated columns so normal users edit only `Ticket Description`
 - Empty columns outside the ticket table are protected too
+- Single-cell edits outside `Ticket Description` are reverted by the script as an extra guard
 
 In Food and Transport files, users should only type into `Ticket Description`.
 When a description is entered on a new row, the script fills:
@@ -146,7 +147,9 @@ When a description is entered on a new row, the script fills:
 
 It sorts imported rows by `Date Time` newest first, then writes them using the same 5-column format.
 
-In File Ticket final, users should only edit `Status`. Import protects the other columns so Ticket ID, Label, Ticket Description, and Date Time stay aligned with the source files. Empty columns outside the ticket table are protected too.
+In File Ticket final, users should only edit `Status`. Import protects the other columns so Ticket ID, Label, Ticket Description, and Date Time stay aligned with the source files. Empty columns outside the ticket table are protected too. Single-cell edits outside `Status` are reverted by the script as an extra guard.
+
+Google Sheets owners can still type into protected cells. The script-level guard catches normal single-cell edits and restores the previous value when Apps Script provides it.
 
 When a user changes the `Status` dropdown in File Ticket final, the whole row recolors immediately:
 

@@ -92,6 +92,9 @@ function createTicketTemplate(sheet) {
  * @param {number} columnCount Number of columns to format.
  */
 function formatTicketSheet(sheet, rowCount, columnCount) {
+  ensureMinimumRows(sheet, CFG.TEMPLATE_ROW_COUNT);
+  ensureMinimumColumns(sheet, CFG.TEMPLATE_COLUMN_COUNT);
+
   const lastRow = Math.max(rowCount, 2);
   const existingFilter = sheet.getFilter();
   if (existingFilter) existingFilter.remove();
@@ -111,7 +114,7 @@ function formatTicketSheet(sheet, rowCount, columnCount) {
     sheet.getRange(2, 1, lastRow - 1, columnCount).setVerticalAlignment('top');
     sheet.getRange(2, CFG.DESCRIPTION_COLUMN, lastRow - 1, 1).setWrap(true);
     sheet.getRange(2, CFG.DATE_TIME_COLUMN, lastRow - 1, 1).setNumberFormat('yyyy-mm-dd hh:mm');
-    applyStatusValidation(sheet, 2, lastRow - 1);
+    applyStatusValidation(sheet, 2, sheet.getMaxRows() - 1);
     applyStatusRowColors(sheet, 2, lastRow - 1, columnCount);
   }
 
@@ -175,8 +178,6 @@ function applyEditProtection(sheet) {
   const isFinalSheet = sheetName === CFG.FINAL_SHEET;
   if (!isSourceSheet && !isFinalSheet) return;
 
-  ensureMinimumRows(sheet, CFG.TEMPLATE_ROW_COUNT);
-  ensureMinimumColumns(sheet, CFG.TEMPLATE_COLUMN_COUNT);
   const maxRows = sheet.getMaxRows();
   const editableColumn = isSourceSheet ? CFG.DESCRIPTION_COLUMN : CFG.STATUS_COLUMN;
   const editableRange = sheet.getRange(2, editableColumn, maxRows - 1, 1);
@@ -250,6 +251,10 @@ function applyStatusValidation(sheet, startRow, rowCount) {
  *   - Users edit Status.
  *   - The script recolors the whole row immediately.
  *
+ * Protection caveat:
+ *   - Google Sheets owners can still edit protected ranges. This trigger
+ *     reverts single-cell edits outside the allowed column as an extra guard.
+ *
  * @param {GoogleAppsScript.Events.SheetsOnEdit} e
  */
 function onEdit(e) {
@@ -258,11 +263,20 @@ function onEdit(e) {
   const sheet = e.range.getSheet();
   const sheetName = sheet.getName();
   if (sheetName === CFG.TICKET_SHEET && isTicketSourceFile()) {
+    if (!isEditAllowed(e, CFG.DESCRIPTION_COLUMN)) {
+      rejectEdit(e);
+      return;
+    }
     handleSourceDescriptionEdit(e);
     return;
   }
 
   if (sheetName !== CFG.FINAL_SHEET) return;
+
+  if (!isEditAllowed(e, CFG.STATUS_COLUMN)) {
+    rejectEdit(e);
+    return;
+  }
 
   const editedRange = e.range;
   const startColumn = editedRange.getColumn();
@@ -277,6 +291,75 @@ function onEdit(e) {
   statuses.forEach((row, index) => {
     applyStatusRowColor(sheet, startRow + index, CFG.HEADERS.length, row[0]);
   });
+}
+
+/**
+ * Check whether an edit is inside the allowed data column.
+ *
+ * Header-row edits are not allowed. Multi-column pasted ranges are rejected
+ * unless the entire range is inside the allowed column.
+ * @param {GoogleAppsScript.Events.SheetsOnEdit} e
+ * @param {number} allowedColumn
+ * @returns {boolean}
+ */
+function isEditAllowed(e, allowedColumn) {
+  const range = e.range;
+  if (range.getRow() < 2) return false;
+  return range.getColumn() === allowedColumn && range.getNumColumns() === 1;
+}
+
+/**
+ * Revert a disallowed edit when Apps Script provides the old value.
+ *
+ * Apps Script only provides oldValue for simple single-cell edits. For pasted
+ * ranges, the sheet protection is still the main defense, and a toast explains
+ * the allowed edit column.
+ * @param {GoogleAppsScript.Events.SheetsOnEdit} e
+ */
+function rejectEdit(e) {
+  const range = e.range;
+  if (range.getNumRows() === 1 && range.getNumColumns() === 1) {
+    if (typeof e.oldValue !== 'undefined') {
+      range.setValue(restoreValueForColumn(e.oldValue, range.getColumn()));
+    } else {
+      range.clearContent();
+    }
+    applyColumnFormat(range, range.getColumn());
+  }
+  SpreadsheetApp.getActive().toast('This column is managed by the script.', 'Edit blocked', 4);
+}
+
+/**
+ * Convert an old edit value back to the right type for the target column.
+ *
+ * Date Time old values can arrive from Apps Script as the spreadsheet serial
+ * number. Writing that serial directly would display as a plain number, so it
+ * is converted back to a Date before restoring.
+ * @param {*} oldValue
+ * @param {number} column
+ * @returns {*}
+ */
+function restoreValueForColumn(oldValue, column) {
+  if (column !== CFG.DATE_TIME_COLUMN) return oldValue;
+
+  const numericValue = Number(oldValue);
+  if (!isNaN(numericValue)) {
+    return new Date(Math.round((numericValue - 25569) * 86400 * 1000));
+  }
+
+  const parsedDate = new Date(oldValue);
+  return isNaN(parsedDate.getTime()) ? oldValue : parsedDate;
+}
+
+/**
+ * Reapply column-specific formatting after a blocked edit is restored.
+ * @param {GoogleAppsScript.Spreadsheet.Range} range
+ * @param {number} column
+ */
+function applyColumnFormat(range, column) {
+  if (column === CFG.DATE_TIME_COLUMN) {
+    range.setNumberFormat('yyyy-mm-dd hh:mm');
+  }
 }
 
 /**
@@ -320,6 +403,7 @@ function handleSourceDescriptionEdit(e) {
     if (!normalizeStatus(row[CFG.STATUS_COLUMN - 1])) {
       sheet.getRange(rowNumber, CFG.STATUS_COLUMN).setValue('CREATED');
     }
+    applyStatusValidation(sheet, rowNumber, 1);
     sheet.getRange(rowNumber, CFG.DATE_TIME_COLUMN).setNumberFormat('yyyy-mm-dd hh:mm');
     sheet.getRange(rowNumber, CFG.DESCRIPTION_COLUMN).setWrap(true);
     sheet.getRange(rowNumber, 1, 1, CFG.HEADERS.length).setVerticalAlignment('top');
