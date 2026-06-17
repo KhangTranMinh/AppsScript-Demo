@@ -7,7 +7,8 @@
  *
  * Import:
  *   - Reads Food and Transport ticket sheets.
- *   - Copies rows exactly as-is into Tickets final.
+ *   - Sorts rows by Date Time, newest first.
+ *   - Writes the sorted rows into Tickets final.
  *
  * Export:
  *   - Uses Label to choose Food or Transport.
@@ -73,6 +74,7 @@ function importData() {
     CFG.SOURCES.forEach(ticketFile => {
       rows = rows.concat(readTicketsFromFile(ticketFile));
     });
+    rows.sort(compareTicketRowsByDateTimeDesc);
 
     const sheet = getOrCreateSheet(CFG.FINAL_SHEET);
     sheet.clear();
@@ -86,6 +88,30 @@ function importData() {
   } catch (e) {
     SpreadsheetApp.getUi().alert('Error: ' + e.message);
   }
+}
+
+/**
+ * Sort ticket rows by Date Time descending.
+ *
+ * Rows with invalid or blank Date Time values are treated as oldest.
+ * @param {Array} left
+ * @param {Array} right
+ * @returns {number}
+ */
+function compareTicketRowsByDateTimeDesc(left, right) {
+  return getTicketTime(right) - getTicketTime(left);
+}
+
+/**
+ * Convert the Date Time cell to a timestamp for sorting.
+ * @param {Array} row
+ * @returns {number}
+ */
+function getTicketTime(row) {
+  const value = row[CFG.DATE_TIME_COLUMN - 1];
+  if (value instanceof Date) return value.getTime();
+  const parsed = new Date(value).getTime();
+  return isNaN(parsed) ? 0 : parsed;
 }
 
 /**

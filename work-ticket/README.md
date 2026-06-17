@@ -136,7 +136,7 @@ When a description is entered on a new row, the script fills:
 
 | Menu Item | Purpose |
 |-----------|---------|
-| `Tickets -> Import Data` | Imports labeled rows from Food and Transport into `Tickets final` |
+| `Tickets -> Import Data` | Imports labeled rows from Food and Transport into `Tickets final`, newest first |
 | `Tickets -> Export Data` | Exports edited rows back to Food or Transport by `Ticket ID` and `Label` |
 
 `Import Data` clears `Tickets final`, reads every non-empty Ticket ID from:
@@ -144,7 +144,7 @@ When a description is entered on a new row, the script fills:
 - `FILE_FOOD_URL` -> `Tickets`
 - `FILE_TRANSPORT_URL` -> `Tickets`
 
-It writes the imported rows using the same 5-column format.
+It sorts imported rows by `Date Time` newest first, then writes them using the same 5-column format.
 
 In File Ticket final, users should only edit `Status`. Import protects the other columns so Ticket ID, Label, Ticket Description, and Date Time stay aligned with the source files. Empty columns outside the ticket table are protected too.
 
