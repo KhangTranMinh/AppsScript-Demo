@@ -85,17 +85,17 @@ All three ticket sheets use the same column order:
 | Ticket ID | Stable ticket identifier used for import/export matching |
 | Label | `Food` or `Transport`; used by File Ticket final to export each ticket back to the right file |
 | Ticket Description | Multi-line ticket text |
-| Date | Ticket date |
+| Date Time | Auto-filled creation timestamp |
 | Status | Dropdown: `CREATED`, `IN-PROGRESS`, `DONE` |
 
 `Label` is part of the source data. The final file does not calculate it during import.
 
 Example rows:
 
-| Ticket ID | Label | Ticket Description | Date | Status |
-|-----------|-------|--------------------|------|--------|
-| `FOOD-1001` | `Food` | Multi-line food task | `2026-06-01` | `CREATED` |
-| `TRN-2001` | `Transport` | Multi-line transport task | `2026-06-01` | `CREATED` |
+| Ticket ID | Label | Ticket Description | Date Time | Status |
+|-----------|-------|--------------------|-----------|--------|
+| `FOOD-1001` | `Food` | Multi-line food task | `2026-06-01 09:00` | `CREATED` |
+| `TRN-2001` | `Transport` | Multi-line transport task | `2026-06-01 09:00` | `CREATED` |
 
 ## Menus
 
@@ -108,14 +108,24 @@ Example rows:
 
 `Create Template` clears the `Tickets` sheet and creates:
 
-- Shared headers: `Ticket ID`, `Label`, `Ticket Description`, `Date`, `Status`
+- Shared headers: `Ticket ID`, `Label`, `Ticket Description`, `Date Time`, `Status`
 - Wrapped multi-line descriptions
 - Top-aligned data rows so multi-line descriptions align with Ticket ID, Label, Date, and Status
-- `yyyy-mm-dd` date formatting
+- `yyyy-mm-dd hh:mm` date-time formatting
 - `Status` dropdown with `CREATED`, `IN-PROGRESS`, `DONE`
 - Light orange row highlight for `IN-PROGRESS`
 - Light green row highlight for `DONE`
 - A filter on the full table
+- Protected generated columns so normal users edit only `Ticket Description`
+- Empty columns outside the ticket table are protected too
+
+In Food and Transport files, users should only type into `Ticket Description`.
+When a description is entered on a new row, the script fills:
+
+- `Ticket ID`: next ID from the latest existing ID, such as `FOOD-1009` or `TRN-2009`
+- `Label`: `Food` or `Transport`
+- `Date Time`: current timestamp
+- `Status`: `CREATED`
 
 `Generate Sample Data` also clears the sheet first, then writes demo rows with the correct label:
 
@@ -135,6 +145,14 @@ Example rows:
 - `FILE_TRANSPORT_URL` -> `Tickets`
 
 It writes the imported rows using the same 5-column format.
+
+In File Ticket final, users should only edit `Status`. Import protects the other columns so Ticket ID, Label, Ticket Description, and Date Time stay aligned with the source files. Empty columns outside the ticket table are protected too.
+
+When a user changes the `Status` dropdown in File Ticket final, the whole row recolors immediately:
+
+- `CREATED` resets to the default background
+- `IN-PROGRESS` changes to light orange
+- `DONE` changes to light green
 
 `Export Data` reads `Tickets final`, then sends each row to the matching file:
 

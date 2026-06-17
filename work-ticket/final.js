@@ -42,7 +42,7 @@ function getTicketSpreadsheet(fileUrl) {
  * Read ticket rows from one configured ticket file.
  *
  * The returned rows preserve CFG.HEADERS order:
- * Ticket ID, Label, Ticket Description, Date, Status.
+ * Ticket ID, Label, Ticket Description, Date Time, Status.
  * @param {{fileUrl: string, sheetName: string, label: string}} ticketFile
  * @returns {Array<Array>}
  */
