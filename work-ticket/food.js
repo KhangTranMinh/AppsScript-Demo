@@ -35,7 +35,6 @@ function onOpen() {
 function createTemplate() {
   const sheet = getOrCreateSheet(CFG.TICKET_SHEET);
   createTicketTemplate(sheet);
-  showDoneAlert('Template created for File Ticket Food.');
 }
 
 /**
@@ -58,5 +57,4 @@ function generateSampleData() {
 
   const sheet = getOrCreateSheet(CFG.TICKET_SHEET);
   writeTicketRows(sheet, rows);
-  showDoneAlert('Generated ' + rows.length + ' Food tickets.');
 }

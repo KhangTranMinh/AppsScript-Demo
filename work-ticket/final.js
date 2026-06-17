@@ -84,8 +84,6 @@ function importData() {
       sheet.getRange(2, 1, rows.length, CFG.HEADERS.length).setValues(rows);
     }
     formatTicketSheet(sheet, rows.length + 1, CFG.HEADERS.length);
-
-    showDoneAlert('Imported ' + rows.length + ' tickets.');
   } catch (e) {
     SpreadsheetApp.getUi().alert('Error: ' + e.message);
   }
