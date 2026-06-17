@@ -137,7 +137,7 @@ When a description is entered on a new row, the script fills:
 | Menu Item | Purpose |
 |-----------|---------|
 | `Tickets -> Import Data` | Imports labeled rows from Food and Transport into `Tickets final`, newest first |
-| `Tickets -> Export Data` | Exports edited rows back to Food or Transport by `Ticket ID` and `Label` |
+| `Tickets -> Export Data` | Exports edited status values back to Food or Transport by `Ticket ID` and `Label` |
 
 `Import Data` clears `Tickets final`, reads every non-empty Ticket ID from:
 
@@ -163,9 +163,10 @@ When a user changes the `Status` dropdown in File Ticket final, the whole row re
 
 Export sends each row to Food or Transport based on `Label`, then matches the target row by `Ticket ID`.
 
-Rows with status `DONE` are not touched. The exporter skips a row if either:
+Export writes only the `Status` column back to Food or Transport. Ticket ID, Label, Ticket Description, and Date Time are not overwritten by export.
 
-- The final row status is `DONE`
-- The matching Food or Transport row status is already `DONE`
+Rows are updated only when the final status differs from the matching Food or Transport status. The export alert reports only the rows that actually changed.
 
-This prevents completed tickets from being overwritten during export.
+Rows already marked `DONE` in Food or Transport are not touched. The exporter skips a row if the matching Food or Transport row status is already `DONE`.
+
+This lets File Ticket final mark active tickets as `DONE`, while preventing already completed source tickets from being overwritten later.

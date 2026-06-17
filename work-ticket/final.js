@@ -13,7 +13,8 @@
  * Export:
  *   - Uses Label to choose Food or Transport.
  *   - Uses Ticket ID to find the matching row in that file.
- *   - Skips rows where the final status or target file status is DONE.
+ *   - Writes only the Status column back to Food/Transport.
+ *   - Skips target rows that are already DONE.
  */
 
 /**
@@ -178,44 +179,41 @@ function buildTicketIndex() {
  * Rules:
  *   - Route by Label.
  *   - Match by Ticket ID.
- *   - Skip if final row status is DONE.
+ *   - Write only Status back to the target row.
  *   - Skip if target row status is already DONE.
  */
 function exportData() {
   try {
     const finalRows = readFinalRows();
     const ticketIndex = buildTicketIndex();
-    let updated = 0;
-    let skippedDone = 0;
-    let missing = 0;
+    const changedRows = [];
 
     finalRows.forEach(row => {
-      if (row.status === 'DONE') {
-        skippedDone++;
-        return;
-      }
-
       const key = row.label + '|' + row.ticketId;
       const target = ticketIndex.get(key);
       if (!target) {
-        missing++;
         return;
       }
 
       if (target.status === 'DONE') {
-        skippedDone++;
         return;
       }
 
-      target.sheet.getRange(target.rowNumber, 1, 1, CFG.HEADERS.length).setValues([row.values]);
-      updated++;
+      if (target.status === row.status) {
+        return;
+      }
+
+      target.sheet.getRange(target.rowNumber, CFG.STATUS_COLUMN).setValue(row.status);
+      applyStatusRowColor(target.sheet, target.rowNumber, CFG.HEADERS.length, row.status);
+      changedRows.push(row.ticketId + ' -> ' + row.status);
     });
 
-    showDoneAlert(
-      'Updated: ' + updated + '\n' +
-      'Skipped DONE: ' + skippedDone + '\n' +
-      'Missing ticket IDs: ' + missing
-    );
+    if (!changedRows.length) {
+      showDoneAlert('No status changes exported.');
+      return;
+    }
+
+    showDoneAlert('Exported changes: ' + changedRows.length + '\n' + changedRows.join('\n'));
   } catch (e) {
     SpreadsheetApp.getUi().alert('Error: ' + e.message);
   }
