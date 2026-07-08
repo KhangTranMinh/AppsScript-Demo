@@ -12,13 +12,6 @@
  *   Message (N).
  */
 
-function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu(TARGET_CONFIG.MENU_NAME)
-    .addItem(TARGET_CONFIG.SYNC_TITLE_MESSAGE_MENU_ITEM, 'syncTitleAndMessage')
-    .addToUi();
-}
-
 function syncTitleAndMessage() {
   var targetSpreadsheet = SpreadsheetApp.openById(TARGET_CONFIG.TARGET_SPREADSHEET_ID);
   var sourceSpreadsheet = SpreadsheetApp.openById(TARGET_CONFIG.SOURCE_SPREADSHEET_ID);

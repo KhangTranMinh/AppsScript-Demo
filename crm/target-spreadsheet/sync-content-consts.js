@@ -26,9 +26,6 @@ var TARGET_CONFIG = {
     'Brand'
   ],
 
-  MENU_NAME: 'Automation',
-  SYNC_TITLE_MESSAGE_MENU_ITEM: 'Sync Title & Message',
-
   STATUS_DONE: 'DONE',
 
   // SpreadsheetApp row/column numbers are 1-based, matching the spreadsheet UI:

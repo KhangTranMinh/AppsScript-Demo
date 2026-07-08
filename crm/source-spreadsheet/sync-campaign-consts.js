@@ -26,9 +26,6 @@ var SOURCE_CONFIG = {
     'Brand'
   ],
 
-  MENU_NAME: 'Automation',
-  SYNC_CAMPAIGN_MENU_ITEM: 'Sync Campaign Name',
-
   // SpreadsheetApp row/column numbers are 1-based, matching the spreadsheet UI:
   // A = 1, B = 2, G = 7, M = 13, N = 14.
   // JavaScript arrays returned by getValues() are 0-based, so the code reads

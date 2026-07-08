@@ -13,13 +13,6 @@
  * - Clears Title (G), Message (H), and Status (I) only on copied rows.
  */
 
-function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu(SOURCE_CONFIG.MENU_NAME)
-    .addItem(SOURCE_CONFIG.SYNC_CAMPAIGN_MENU_ITEM, 'syncCampaignName')
-    .addToUi();
-}
-
 function syncCampaignName() {
   var sourceSpreadsheet = SpreadsheetApp.openById(SOURCE_CONFIG.SOURCE_SPREADSHEET_ID);
   var sourceSheet = sourceSpreadsheet.getSheetByName(SOURCE_CONFIG.SOURCE_SHEET_NAME);
