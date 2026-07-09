@@ -7,6 +7,7 @@
  * Behavior:
  * - Reads the source tab "Detail" in one batch.
  * - Finds rows where Title (M) or Message (N) is empty.
+ * - Ignores rows missing required planning fields C:L.
  * - Uses Service L1 (G) to choose the matching target service tab.
  * - Updates matching target campaign fields (B:F) if Campaign Name already
  *   exists.
@@ -64,8 +65,9 @@ function getRowsMissingTitleOrMessage_(sheet) {
     var title = rowValues[SOURCE_CONFIG.COLUMNS.TITLE - 1];
     var message = rowValues[SOURCE_CONFIG.COLUMNS.MESSAGE - 1];
 
-    // Only rows with both a campaign name and service are useful to sync.
-    if (!isBlank_(campaignName) && !isBlank_(serviceL1) && (isBlank_(title) || isBlank_(message))) {
+    // Only complete planning rows are useful to sync. If any required metadata
+    // field from C:L is blank, leave the row in source and wait for completion.
+    if (!isBlank_(campaignName) && hasAllRequiredCampaignFields_(rowValues) && (isBlank_(title) || isBlank_(message))) {
       campaignRows.push({
         rowNumber: spreadsheetRow,
         campaignName: campaignName,
@@ -79,6 +81,12 @@ function getRowsMissingTitleOrMessage_(sheet) {
   });
 
   return campaignRows;
+}
+
+function hasAllRequiredCampaignFields_(rowValues) {
+  return SOURCE_CONFIG.REQUIRED_CAMPAIGN_FIELD_COLUMNS.every(function(columnNumber) {
+    return !isBlank_(rowValues[columnNumber - 1]);
+  });
 }
 
 function writeCampaignNamesToTargetSheets_(targetSpreadsheet, campaignRows) {
