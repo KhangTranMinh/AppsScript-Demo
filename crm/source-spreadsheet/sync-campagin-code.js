@@ -8,8 +8,9 @@
  * - Reads the source tab "Detail" in one batch.
  * - Finds rows where Title (M) or Message (N) is empty.
  * - Uses Service L1 (G) to choose the matching target service tab.
- * - Updates the matching target Campaign Name (B) if it already exists.
- * - Appends new Campaign Name values to the bottom of the service tab.
+ * - Updates matching target campaign fields (B:F) if Campaign Name already
+ *   exists.
+ * - Appends new campaign fields (B:F) to the bottom of the service tab.
  * - Clears Title (G), Message (H), and Status (I) only on copied rows.
  */
 
@@ -55,7 +56,11 @@ function getRowsMissingTitleOrMessage_(sheet) {
     // rowValues is a normal JavaScript array, so it is 0-based. The constants
     // are SpreadsheetApp column numbers, so subtract 1 when reading the array.
     var campaignName = rowValues[SOURCE_CONFIG.COLUMNS.CAMPAIGN_NAME - 1];
+    var pic = rowValues[SOURCE_CONFIG.COLUMNS.PIC - 1];
+    var releaseDate = rowValues[SOURCE_CONFIG.COLUMNS.RELEASE_DATE - 1];
+    var time = rowValues[SOURCE_CONFIG.COLUMNS.TIME - 1];
     var serviceL1 = rowValues[SOURCE_CONFIG.COLUMNS.SERVICE_L1 - 1];
+    var contentAngle = rowValues[SOURCE_CONFIG.COLUMNS.CONTENT_ANGLE - 1];
     var title = rowValues[SOURCE_CONFIG.COLUMNS.TITLE - 1];
     var message = rowValues[SOURCE_CONFIG.COLUMNS.MESSAGE - 1];
 
@@ -64,6 +69,10 @@ function getRowsMissingTitleOrMessage_(sheet) {
       campaignRows.push({
         rowNumber: spreadsheetRow,
         campaignName: campaignName,
+        pic: pic,
+        releaseDate: releaseDate,
+        time: time,
+        contentAngle: contentAngle,
         serviceL1: String(serviceL1).trim()
       });
     }
@@ -123,13 +132,13 @@ function writeCampaignNamesToTargetSheet_(targetSheet, campaignRows) {
     if (existingRow) {
       existingUpdates.push({
         rowNumber: existingRow,
-        campaignName: campaignRow.campaignName
+        values: getTargetCampaignFieldValues_(campaignRow)
       });
       rowsToClear.push(existingRow);
       return;
     }
 
-    appendValues.push([campaignRow.campaignName]);
+    appendValues.push(getTargetCampaignFieldValues_(campaignRow));
     rowsToClear.push(nextAppendRow);
     targetState.rowByCampaignName[campaignKey] = nextAppendRow;
     nextAppendRow += 1;
@@ -141,21 +150,35 @@ function writeCampaignNamesToTargetSheet_(targetSheet, campaignRows) {
     ensureSheetHasRows_(targetSheet, targetState.lastCampaignRow + appendValues.length);
 
     targetSheet
-      .getRange(targetState.lastCampaignRow + 1, SOURCE_CONFIG.COLUMNS.CAMPAIGN_NAME, appendValues.length, 1)
+      .getRange(targetState.lastCampaignRow + 1, SOURCE_CONFIG.TARGET_COLUMNS.CAMPAIGN_NAME, appendValues.length, getTargetCampaignFieldColumnCount_())
       .setValues(appendValues);
   }
 
   clearCopiedTargetRows_(targetSheet, rowsToClear);
 }
 
+function getTargetCampaignFieldValues_(campaignRow) {
+  return [
+    campaignRow.campaignName,
+    campaignRow.pic,
+    campaignRow.releaseDate,
+    campaignRow.time,
+    campaignRow.contentAngle
+  ];
+}
+
+function getTargetCampaignFieldColumnCount_() {
+  return SOURCE_CONFIG.TARGET_COLUMNS.CONTENT_ANGLE - SOURCE_CONFIG.TARGET_COLUMNS.CAMPAIGN_NAME + 1;
+}
+
 function writeExistingCampaignNames_(targetSheet, existingUpdates) {
   getContiguousRowChunks_(existingUpdates).forEach(function(chunk) {
     var values = chunk.map(function(update) {
-      return [update.campaignName];
+      return update.values;
     });
 
     targetSheet
-      .getRange(chunk[0].rowNumber, SOURCE_CONFIG.COLUMNS.CAMPAIGN_NAME, values.length, 1)
+      .getRange(chunk[0].rowNumber, SOURCE_CONFIG.TARGET_COLUMNS.CAMPAIGN_NAME, values.length, getTargetCampaignFieldColumnCount_())
       .setValues(values);
   });
 }

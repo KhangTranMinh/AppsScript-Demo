@@ -27,20 +27,29 @@ var SOURCE_CONFIG = {
   ],
 
   // SpreadsheetApp row/column numbers are 1-based, matching the spreadsheet UI:
-  // A = 1, B = 2, G = 7, M = 13, N = 14.
+  // A = 1, B = 2, C = 3, D = 4, E = 5, G = 7, L = 12, M = 13, N = 14.
   // JavaScript arrays returned by getValues() are 0-based, so the code reads
   // these columns from rowValues with COLUMN_NUMBER - 1.
   COLUMNS: {
     CAMPAIGN_NAME: 2, // B
+    PIC: 3,           // C
+    RELEASE_DATE: 4,  // D
+    TIME: 5,          // E
     SERVICE_L1: 7,    // G
+    CONTENT_ANGLE: 12, // L
     TITLE: 13,        // M
     MESSAGE: 14       // N
   },
 
   TARGET_COLUMNS: {
-    TITLE: 7,   // G
-    MESSAGE: 8, // H
-    STATUS: 9   // I
+    CAMPAIGN_NAME: 2,  // B
+    PIC: 3,            // C
+    RELEASE_DATE: 4,   // D
+    TIME: 5,           // E
+    CONTENT_ANGLE: 6,  // F
+    TITLE: 7,          // G
+    MESSAGE: 8,        // H
+    STATUS: 9          // I
   },
 
   // Row 1 is blank, row 2 is the header row, and data starts on row 3.
