@@ -10,6 +10,7 @@
  * - Uses service tab name + Campaign Name (B) to find the matching source row.
  * - Copies target Title (G) and Message (H) back to source Title (M) and
  *   Message (N).
+ * - Marks successfully synced target rows as DONE and highlights B:I in green.
  */
 
 function syncTitleAndMessage() {
@@ -28,9 +29,10 @@ function syncTitleAndMessage() {
     return;
   }
 
-  var syncedCount = writeTitleAndMessageToSource_(sourceSheet, rowsToSync);
+  var syncResult = writeTitleAndMessageToSource_(sourceSheet, rowsToSync);
+  markTargetRowsDone_(targetSpreadsheet, syncResult.syncedTargetRowsBySheetName);
 
-  SpreadsheetApp.getUi().alert('Synced ' + syncedCount + ' title/message rows to source Detail tab.');
+  SpreadsheetApp.getUi().alert('Synced ' + syncResult.syncedCount + ' title/message rows to source Detail tab and marked target rows DONE.');
 }
 
 function getRowsNotDoneFromServiceSheets_(targetSpreadsheet) {
@@ -93,6 +95,7 @@ function getRowsNotDoneFromSheet_(sheet, sheetName) {
 function writeTitleAndMessageToSource_(sourceSheet, rowsToSync) {
   var sourceRowByKey = buildSourceRowIndex_(sourceSheet);
   var rowsMatchedToSource = [];
+  var targetRowBySourceNumber = {};
 
   rowsToSync.forEach(function(rowToSync) {
     var sourceRowNumber = sourceRowByKey[getSourceMatchKey_(rowToSync.sheetName, rowToSync.campaignName)];
@@ -105,6 +108,8 @@ function writeTitleAndMessageToSource_(sourceSheet, rowsToSync) {
 
     rowsMatchedToSource.push({
       rowNumber: sourceRowNumber,
+      targetSheetName: rowToSync.sheetName,
+      targetRowNumber: rowToSync.rowNumber,
       campaignName: rowToSync.campaignName,
       title: rowToSync.title,
       message: rowToSync.message
@@ -112,7 +117,10 @@ function writeTitleAndMessageToSource_(sourceSheet, rowsToSync) {
   });
 
   if (rowsMatchedToSource.length === 0) {
-    return 0;
+    return {
+      syncedCount: 0,
+      syncedTargetRowsBySheetName: {}
+    };
   }
 
   // If duplicate target rows point to the same source row, the later row in the
@@ -121,6 +129,10 @@ function writeTitleAndMessageToSource_(sourceSheet, rowsToSync) {
 
   rowsMatchedToSource.forEach(function(rowToSync) {
     rowBySourceNumber[rowToSync.rowNumber] = rowToSync;
+    targetRowBySourceNumber[rowToSync.rowNumber] = {
+      sheetName: rowToSync.targetSheetName,
+      rowNumber: rowToSync.targetRowNumber
+    };
   });
 
   var uniqueRowsToSync = Object.keys(rowBySourceNumber).map(function(rowNumberText) {
@@ -139,7 +151,65 @@ function writeTitleAndMessageToSource_(sourceSheet, rowsToSync) {
       .setValues(titleMessageValues);
   });
 
-  return uniqueRowsToSync.length;
+  return {
+    syncedCount: uniqueRowsToSync.length,
+    syncedTargetRowsBySheetName: groupTargetRowsBySheetName_(uniqueRowsToSync, targetRowBySourceNumber)
+  };
+}
+
+function groupTargetRowsBySheetName_(syncedSourceRows, targetRowBySourceNumber) {
+  var rowsBySheetName = {};
+
+  syncedSourceRows.forEach(function(sourceRow) {
+    var targetRow = targetRowBySourceNumber[sourceRow.rowNumber];
+
+    if (!targetRow) {
+      return;
+    }
+
+    if (!rowsBySheetName[targetRow.sheetName]) {
+      rowsBySheetName[targetRow.sheetName] = [];
+    }
+
+    rowsBySheetName[targetRow.sheetName].push({
+      rowNumber: targetRow.rowNumber
+    });
+  });
+
+  return rowsBySheetName;
+}
+
+function markTargetRowsDone_(targetSpreadsheet, syncedTargetRowsBySheetName) {
+  Object.keys(syncedTargetRowsBySheetName).forEach(function(sheetName) {
+    var sheet = targetSpreadsheet.getSheetByName(sheetName);
+
+    if (!sheet) {
+      return;
+    }
+
+    getContiguousRowChunks_(syncedTargetRowsBySheetName[sheetName]).forEach(function(chunk) {
+      var statusValues = chunk.map(function() {
+        return [TARGET_CONFIG.STATUS_DONE];
+      });
+
+      sheet
+        .getRange(chunk[0].rowNumber, TARGET_CONFIG.TARGET_COLUMNS.STATUS, statusValues.length, 1)
+        .setValues(statusValues);
+
+      sheet
+        .getRange(
+          chunk[0].rowNumber,
+          TARGET_CONFIG.TARGET_HIGHLIGHT_COLUMNS.START,
+          chunk.length,
+          getTargetHighlightColumnCount_()
+        )
+        .setBackground(TARGET_CONFIG.DONE_ROW_BACKGROUND);
+    });
+  });
+}
+
+function getTargetHighlightColumnCount_() {
+  return TARGET_CONFIG.TARGET_HIGHLIGHT_COLUMNS.END - TARGET_CONFIG.TARGET_HIGHLIGHT_COLUMNS.START + 1;
 }
 
 function buildSourceRowIndex_(sourceSheet) {

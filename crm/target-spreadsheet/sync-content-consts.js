@@ -27,6 +27,7 @@ var TARGET_CONFIG = {
   ],
 
   STATUS_DONE: 'DONE',
+  DONE_ROW_BACKGROUND: '#d9ead3',
 
   // SpreadsheetApp row/column numbers are 1-based, matching the spreadsheet UI:
   // A = 1, B = 2, G = 7, H = 8, I = 9, M = 13, N = 14.
@@ -44,6 +45,11 @@ var TARGET_CONFIG = {
     TITLE: 7,         // G
     MESSAGE: 8,       // H
     STATUS: 9         // I
+  },
+
+  TARGET_HIGHLIGHT_COLUMNS: {
+    START: 2, // B
+    END: 9    // I
   },
 
   // Row 1 is blank, row 2 is the header row, and data starts on row 3.
